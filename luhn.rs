@@ -63,6 +63,32 @@ pub fn luhn_check(cc_number: &str) -> Result<bool, LuhnError> {
     Ok(check % 10 == 0)
 }
 
+/// Implementation of the [Luhn
+/// Algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm)
+/// check digit test. Requires that the input be a string
+/// over the alphabet of ASCII digits and spaces. Returns
+/// `false` if the check digit is wrong or if the input is
+/// not valid.
+///
+/// # Examples
+///
+/// ```
+/// # use luhn::luhn_digit;
+/// assert_eq!('8', luhn_digit("15").unwrap());
+/// assert_eq!('3', luhn_digit("51").unwrap());
+/// assert_eq!('8', luhn_digit("751").unwrap());
+/// ```
+pub fn luhn_digit(cc_number: &str) -> Result<char, LuhnError> {
+    let (ndigits, sums) = luhn_sum(cc_number)?;
+    if ndigits == 0 {
+        return Err(LuhnError::Short(ndigits));
+    }
+    let check = sums[1 - ndigits % 2];
+    let residue = check % 10;
+    let digit = (10 - residue) % 10;
+    Ok(char::from_digit(digit, 10).unwrap())
+}
+
 #[test]
 fn test_non_digit_cc_number() {
     assert!(matches!(luhn_check("foo"), Err(LuhnError::NonDigit(0, 'f'))));
