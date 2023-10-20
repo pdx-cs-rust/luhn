@@ -1,11 +1,38 @@
 /// Error type returned when the string passed to [luhn] is
 /// ill-formed.
 #[derive(Debug)]
-pub enum LuhnFormatError {
+pub enum LuhnError {
     /// Encountered a given non-digit `char` at given position.
     NonDigit(usize, char),
     /// Given length was too short.
-    Length(usize),
+    Short(usize),
+}
+
+fn luhn_sum(cc_number: &str) -> Result<(usize, [u32; 2]), LuhnError> {
+    fn doubled(d: u32) -> u32 {
+        if d > 4 {
+            1 + 2 * d - 10
+        } else {
+            2 * d
+        }
+    }
+
+    let mut valid = 0;
+    let mut sums = [0; 2];
+    for (i, c) in cc_number.chars().enumerate() {
+        if c == ' ' {
+            continue;
+        }
+        if let Some(d) = c.to_digit(10) {
+            let m = valid % 2;
+            sums[1 - m] += d;
+            sums[m] += doubled(d);
+            valid += 1;
+            continue;
+        }
+        return Err(LuhnError::NonDigit(i, c));
+    }
+    Ok((valid, sums))
 }
 
 /// Implementation of the [Luhn
@@ -14,55 +41,31 @@ pub enum LuhnFormatError {
 /// over the alphabet of ASCII digits and spaces. Returns
 /// `false` if the check digit is wrong or if the input is
 /// not valid.
-pub fn luhn(cc_number: &str) -> Result<bool, LuhnFormatError> {
-    let mut digits: Vec<u8> = Vec::new();
-
-    for (i, c) in cc_number.chars().enumerate() {
-        if c == ' ' {
-            continue;
-        }
-        if let Some(d) = c.to_digit(10) {
-            digits.push(d.try_into().unwrap());
-        } else {
-            return Err(LuhnFormatError::NonDigit(i, c));
-        }
-    }
-
-    let ndigits = digits.len();
+pub fn luhn(cc_number: &str) -> Result<bool, LuhnError> {
+    let (ndigits, sums) = luhn_sum(cc_number)?;
     if ndigits < 2 {
-        return Err(LuhnFormatError::Length(ndigits));
+        return Err(LuhnError::Short(ndigits));
     }
-
-    let mut sum: u64 = 0;
-    for (i, d) in digits.into_iter().rev().enumerate() {
-        let s = if i % 2 == 0 {
-            d
-        } else if d > 4 {
-            1 + 2 * d - 10
-        } else {
-            2 * d
-        };
-        sum += u64::from(s);
-    }
-    Ok(sum % 10 == 0)
+    let check = sums[ndigits % 2];
+    Ok(check % 10 == 0)
 }
 
 #[test]
 fn test_non_digit_cc_number() {
-    assert!(matches!(luhn("foo"), Err(LuhnFormatError::NonDigit(0, 'f'))));
-    assert!(matches!(luhn("0 foo 0"), Err(LuhnFormatError::NonDigit(2, 'f'))));
+    assert!(matches!(luhn("foo"), Err(LuhnError::NonDigit(0, 'f'))));
+    assert!(matches!(luhn("0 foo 0"), Err(LuhnError::NonDigit(2, 'f'))));
 }
 
 #[test]
 fn test_empty_cc_number() {
-    assert!(matches!(luhn(""), Err(LuhnFormatError::Length(0))));
-    assert!(matches!(luhn(" "), Err(LuhnFormatError::Length(0))));
-    assert!(matches!(luhn("  "), Err(LuhnFormatError::Length(0))));
+    assert!(matches!(luhn(""), Err(LuhnError::Short(0))));
+    assert!(matches!(luhn(" "), Err(LuhnError::Short(0))));
+    assert!(matches!(luhn("  "), Err(LuhnError::Short(0))));
 }
 
 #[test]
 fn test_single_digit_cc_number() {
-    assert!(matches!(luhn("0"), Err(LuhnFormatError::Length(1))));
+    assert!(matches!(luhn("0"), Err(LuhnError::Short(1))));
 }
 
 #[test]
