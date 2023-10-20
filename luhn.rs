@@ -17,6 +17,10 @@ fn luhn_sum(cc_number: &str) -> Result<(usize, [u32; 2]), LuhnError> {
         }
     }
 
+    // Idea: Compute both the "odd" and "even" sums and
+    // return them both, along with a count of valid characters.
+    // This can be done without heap, and can be used for
+    // both checking and generating a check digit.
     let mut valid = 0;
     let mut sums = [0; 2];
     for (i, c) in cc_number.chars().enumerate() {
@@ -41,6 +45,15 @@ fn luhn_sum(cc_number: &str) -> Result<(usize, [u32; 2]), LuhnError> {
 /// over the alphabet of ASCII digits and spaces. Returns
 /// `false` if the check digit is wrong or if the input is
 /// not valid.
+///
+/// # Examples
+///
+/// ```
+/// # use luhn::luhn_check;
+/// assert!(luhn_check("158").unwrap());
+/// assert!(luhn_check("513").unwrap());
+/// assert!(luhn_check("7518").unwrap());
+/// ```
 pub fn luhn_check(cc_number: &str) -> Result<bool, LuhnError> {
     let (ndigits, sums) = luhn_sum(cc_number)?;
     if ndigits < 2 {
