@@ -1,7 +1,12 @@
 /// Error type returned when the string passed to [luhn] is
 /// ill-formed.
 #[derive(Debug)]
-pub struct LuhnFormatError;
+pub enum LuhnFormatError {
+    /// Encountered a given non-digit `char` at given position.
+    NonDigit(usize, char),
+    /// Given length was too short.
+    Length(usize),
+}
 
 /// Implementation of the [Luhn
 /// Algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm)
@@ -12,19 +17,20 @@ pub struct LuhnFormatError;
 pub fn luhn(cc_number: &str) -> Result<bool, LuhnFormatError> {
     let mut digits: Vec<u8> = Vec::new();
 
-    for c in cc_number.chars() {
+    for (i, c) in cc_number.chars().enumerate() {
         if c == ' ' {
             continue;
         }
         if let Some(d) = c.to_digit(10) {
             digits.push(d.try_into().unwrap());
         } else {
-            return Err(LuhnFormatError);
+            return Err(LuhnFormatError::NonDigit(i, c));
         }
     }
 
-    if digits.len() < 2 {
-        return Err(LuhnFormatError);
+    let ndigits = digits.len();
+    if ndigits < 2 {
+        return Err(LuhnFormatError::Length(ndigits));
     }
 
     let mut sum: u64 = 0;
@@ -43,21 +49,20 @@ pub fn luhn(cc_number: &str) -> Result<bool, LuhnFormatError> {
 
 #[test]
 fn test_non_digit_cc_number() {
-    assert!(luhn("foo").is_err());
-    assert!(luhn("foo 0 0").is_err());
+    assert!(matches!(luhn("foo"), Err(LuhnFormatError::NonDigit(0, 'f'))));
+    assert!(matches!(luhn("0 foo 0"), Err(LuhnFormatError::NonDigit(2, 'f'))));
 }
 
 #[test]
 fn test_empty_cc_number() {
-    assert!(luhn("").is_err());
-    assert!(luhn(" ").is_err());
-    assert!(luhn("  ").is_err());
-    assert!(luhn("    ").is_err());
+    assert!(matches!(luhn(""), Err(LuhnFormatError::Length(0))));
+    assert!(matches!(luhn(" "), Err(LuhnFormatError::Length(0))));
+    assert!(matches!(luhn("  "), Err(LuhnFormatError::Length(0))));
 }
 
 #[test]
 fn test_single_digit_cc_number() {
-    assert!(luhn("0").is_err());
+    assert!(matches!(luhn("0"), Err(LuhnFormatError::Length(1))));
 }
 
 #[test]
