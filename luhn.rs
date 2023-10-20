@@ -1,3 +1,5 @@
+#![no_std]
+
 /// Error type returned when the string passed to [luhn] is
 /// ill-formed.
 #[derive(Debug)]
