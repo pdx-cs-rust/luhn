@@ -1,3 +1,9 @@
+/// Implementation of the [Luhn
+/// Algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm)
+/// check digit test. Requires that the input be a string
+/// over the alphabet of ASCII digits and spaces. Returns
+/// `false` if the check digit is wrong or if the input is
+/// not valid.
 pub fn luhn(cc_number: &str) -> bool {
     let mut digits: Vec<u8> = Vec::new();
 
