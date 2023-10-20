@@ -91,8 +91,14 @@ pub fn luhn_digit(cc_number: &str) -> Result<char, LuhnError> {
 
 #[test]
 fn test_non_digit_cc_number() {
-    assert!(matches!(luhn_check("foo"), Err(LuhnError::NonDigit(0, 'f'))));
-    assert!(matches!(luhn_check("0 foo 0"), Err(LuhnError::NonDigit(2, 'f'))));
+    assert!(matches!(
+        luhn_check("foo"),
+        Err(LuhnError::NonDigit(0, 'f')),
+    ));
+    assert!(matches!(
+        luhn_check("0 foo 0"),
+        Err(LuhnError::NonDigit(2, 'f')),
+    ));
 }
 
 #[test]
